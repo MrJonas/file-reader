@@ -1,91 +1,51 @@
-import Image from 'next/image'
-import { Inter } from '@next/font/google'
-import styles from './page.module.css'
+"use client";
 
-const inter = Inter({ subsets: ['latin'] })
+import { useCallback, useEffect, useMemo } from "react";
+import { selectFiles, FilesState } from "src/store/filesSlice";
+import { useAppDispatch, useAppSelector } from "src/store/store";
+import { loadFilesList } from "src/store/filesAPIActions";
+
+const useLoadedFiles = (): [FilesState, () => void] => {
+  const filesState = useAppSelector(selectFiles);
+  const dispatch = useAppDispatch();
+  const loadFiles = useCallback(() => dispatch(loadFilesList()), [dispatch]);
+  useEffect(() => {
+    const promise = loadFiles();
+    return () => {
+      promise.abort();
+    };
+  }, [loadFiles]);
+  return [filesState, loadFiles];
+};
 
 export default function Home() {
+  const [{ status, files, path, error }, loadFiles] = useLoadedFiles();
+  const filesString = JSON.stringify(files);
+
+  const encodedFiles = useMemo(
+    () => `data:text/json;charset=utf-8,${encodeURIComponent(filesString)}`,
+    [filesString]
+  );
+
+  if (status === "loading") return <div>Loading...</div>;
+  if (status === "failed") return <div>ERROR: {error}</div>;
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <div>
+      <h4>ACTIONS</h4>
+      <a onClick={loadFiles}>{">"} ReScan</a>
+      <br />
+      <a href={encodedFiles} download="filesList.json">
+        {">"} Download list
+      </a>
+      <h4>DIRECTORY PATH</h4>
+      {path}
+      <h4>LIST (count: {files.length})</h4>
+      {files.map((file) => (
+        <div key={file.name}>
+          {file.name} {file.active ? "active" : "inactive"}
         </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-        <div className={styles.thirteen}>
-          <Image src="/thirteen.svg" alt="13" width={40} height={31} priority />
-        </div>
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://beta.nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+      ))}
+    </div>
+  );
 }
