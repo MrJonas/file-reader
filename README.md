@@ -8,6 +8,10 @@
 
 ## How to use
 
-- Start app by `yarn dev`
-- Go to `localhost:3000`
+- Start app by running `yarn && yarn dev`
+- Set target directory in `src/constants.tsx`
+- Go to `localhost:3000` to see file list
+- Click `ReScan` to scan dir again
+- Click `Download list` to download list to json file
+
 
